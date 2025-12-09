@@ -5,4 +5,13 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [preact(), tailwindcss()],
+  build: {
+    rollupOptions: {
+      input: 'src/loader.ts',
+      output: {
+        format: 'iife',
+        entryFileNames: 'tour.js',
+      },
+    },
+  },
 })
