@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks'
 import { supabase } from './supabase'
+import { clearHighlight, highlightElement } from './highlight'
 
 type Props = { tourId: string }
 type TourStep = {
@@ -8,9 +9,16 @@ type TourStep = {
   target_selector?: string
 }
 
+type ModalPosition = {
+  top: number
+  left: number
+}
+
 export default function App({ tourId }: Props) {
+  const [open, setOpen] = useState(true)
   const [tourSteps, setTourSteps] = useState<TourStep[]>([])
-  // const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(0)
+  const [modalPosition, setModalPosition] = useState<ModalPosition | null>(null)
 
   useEffect(() => {
     async function getTour() {
@@ -29,43 +37,88 @@ export default function App({ tourId }: Props) {
     getTour()
   }, [])
 
-  function handleNext() {}
+  useEffect(() => {
+    if (!open || tourSteps.length === 0) {
+      clearHighlight()
+      return
+    }
 
-  function handlePrev() {}
+    const step = tourSteps[currentStep]
+    if (step?.target_selector) {
+      const target = document.querySelector(step.target_selector) as HTMLElement | null
+      if (target) {
+        highlightElement(target)
+        const rect = target.getBoundingClientRect()
+        const modalWidth = 320
+        const screenPadding = 16
+
+        let left = rect.left
+        if (left + modalWidth > window.innerWidth) {
+          left = rect.right - modalWidth
+        }
+
+        if (left < 0) left = screenPadding
+
+        setModalPosition({ top: rect.bottom + 12, left })
+      } else {
+        console.warn(`Embed Tour: Target element "${step.target_selector}" not found.`)
+        clearHighlight()
+        setModalPosition(null)
+      }
+    } else {
+      clearHighlight()
+      setModalPosition(null)
+    }
+    return () => clearHighlight()
+  }, [currentStep, tourSteps, open])
+
+  function handleNext() {
+    if (currentStep === tourSteps.length - 1) {
+      setOpen(false)
+    } else {
+      setCurrentStep(currentStep + 1)
+    }
+  }
+
+  function handlePrev() {
+    setCurrentStep(currentStep - 1)
+  }
+
+  const modalStyle = modalPosition
+    ? { top: `${modalPosition.top}px`, left: `${modalPosition.left}px`, position: 'fixed' }
+    : {}
 
   return (
-    <div className="tw-root" aria-hidden={false}>
-      {/* <button
-        aria-label="Open tour"
-        className="tw-btn-launcher tw-animate__animated tw-animate__fadeIn"
-        onClick={() => {
-          setOpen((s) => !s)
-        }}
-      >
-        Tour
-      </button> */}
-
-      {tourSteps && (
-        <div
-          className="tw-modal tw-animate__animated tw-animate__zoomIn"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="tw-modal-content text-black">
-            <h3 className="tw-modal-title">Welcome</h3>
-            <div className="tw-modal-body">
-              This is a tour modal — use the dashboard to configure full tours.
-            </div>
-            <div className="tw-modal-actions">
-              <button onClick={handleNext} className="tw-btn">
-                Close
-              </button>
-              <button onClick={handlePrev} className="tw-btn">
-                Close
-              </button>
+    <div className="tw-root" aria-hidden={!open}>
+      {tourSteps.length > 0 && open && (
+        <>
+          {!tourSteps[currentStep].target_selector && (
+            <div className="tw-modal-overlay" onClick={() => setOpen(false)}></div>
+          )}
+          <div
+            style={modalStyle}
+            className={`tw-modal ${
+              !modalPosition ? 'tw-modal-centered' : ''
+            } tw-animate__animated tw-animate__zoomIn`}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="tw-modal-content text-black">
+              <h3 className="tw-modal-title"> {tourSteps[currentStep].title} </h3>
+              <div className="tw-modal-body">{tourSteps[currentStep].description}</div>
+              <div className="tw-modal-actions">
+                {currentStep > 0 && (
+                  <button onClick={handlePrev} className="tw-btn tw-btn-outline tw-mr-auto">
+                    Previous
+                  </button>
+                )}
+                <button onClick={handleNext} className="tw-btn">
+                  {currentStep === tourSteps.length - 1 ? 'Finish' : 'Next'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   )
