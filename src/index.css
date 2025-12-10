@@ -58,7 +58,8 @@
 }
 .tw-modal-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   width: 100%;
   gap: 8px;
   margin-top: 12px;
@@ -75,7 +76,4 @@
   background: transparent;
   color: #111827;
   border: 1px solid #d1d5db;
-}
-.tw-mr-auto {
-  margin-right: auto;
 }

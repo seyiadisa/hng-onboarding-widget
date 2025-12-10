@@ -16,10 +16,14 @@ type ModalPosition = {
 }
 
 export default function App({ tourId, config }: Props) {
-  const [open, setOpen] = useState(true)
+  const storageKey = `tour-widget-step-${tourId}`
+  const finishedKey = `tour-widget-finished-${tourId}`
+
+  const [open, setOpen] = useState(false)
   const [tourSteps, setTourSteps] = useState<TourStep[]>([])
   const [currentStep, setCurrentStep] = useState(0)
   const [modalPosition, setModalPosition] = useState<ModalPosition | null>(null)
+  const [isFinished, setIsFinished] = useState(localStorage.getItem(finishedKey) === 'true')
 
   useEffect(() => {
     async function getTour() {
@@ -32,13 +36,25 @@ export default function App({ tourId, config }: Props) {
 
         return
       }
+
+      if (data && data.length > 0) {
+        const savedStep = parseInt(localStorage.getItem(storageKey) || '0', 10)
+        setCurrentStep(savedStep)
+        if (localStorage.getItem(finishedKey) !== 'true') {
+          setOpen(true)
+        }
+      }
       setTourSteps(data)
     }
 
     getTour()
-  }, [])
+  }, [tourId, storageKey, finishedKey])
 
   useEffect(() => {
+    if (open) {
+      localStorage.setItem(storageKey, String(currentStep))
+    }
+
     if (!open || tourSteps.length === 0) {
       clearHighlight()
       return
@@ -70,19 +86,37 @@ export default function App({ tourId, config }: Props) {
       clearHighlight()
       setModalPosition(null)
     }
-    return () => clearHighlight() // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStep, tourSteps, open])
+    return () => clearHighlight()
+  }, [currentStep, tourSteps, open, storageKey])
+
+  function handleClose() {
+    setOpen(false)
+    clearHighlight()
+  }
+
+  function handleSkip() {
+    handleClose()
+  }
 
   function handleNext() {
     if (currentStep === tourSteps.length - 1) {
-      setOpen(false)
+      localStorage.removeItem(storageKey)
+      localStorage.setItem(finishedKey, 'true')
+      setIsFinished(true)
+      handleClose()
     } else {
       setCurrentStep(currentStep + 1)
     }
   }
 
   function handlePrev() {
-    setCurrentStep(currentStep - 1)
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1)
+    }
+  }
+
+  if (isFinished && !config.showTourButton) {
+    return null
   }
 
   const modalStyle = modalPosition
@@ -100,10 +134,15 @@ export default function App({ tourId, config }: Props) {
 
   return (
     <div className="tw-root" aria-hidden={!open}>
-      {tourSteps.length > 0 && open && (
+      {!open && tourSteps.length > 0 && (
+        <button className="tw-btn rounded-md" style={customStyles} onClick={() => setOpen(true)}>
+          {isFinished ? 'Show Tour' : 'Resume Tour'}
+        </button>
+      )}
+      {tourSteps.length > 0 && open && !isFinished && (
         <>
           {!tourSteps[currentStep].target_selector && (
-            <div className="tw-modal-overlay" onClick={() => setOpen(false)}></div>
+            <div className="tw-modal-overlay" onClick={handleClose}></div>
           )}
           <div
             style={{ ...modalStyle, ...customStyles }}
@@ -114,14 +153,25 @@ export default function App({ tourId, config }: Props) {
             <div
               className={`tw-modal-content ${config.add3d ? 'tw-modal-content-3d' : ''} text-black`}
             >
-              <h3 className="tw-modal-title"> {tourSteps[currentStep].title} </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="tw-modal-title"> {tourSteps[currentStep].title} </h3>
+                <button onClick={handleSkip} className="text-sm">
+                  Skip
+                </button>
+              </div>
               <div className="tw-modal-body">{tourSteps[currentStep].description}</div>
+              <div className="tw-modal-footer"></div>
               <div className="tw-modal-actions">
                 {currentStep > 0 && (
-                  <button onClick={handlePrev} className="tw-btn tw-btn-outline tw-mr-auto">
+                  <button onClick={handlePrev} className="tw-btn tw-btn-outline">
                     Previous
                   </button>
                 )}
+                <div className="tw-step-counter">
+                  <p>
+                    {currentStep + 1} / {tourSteps.length}
+                  </p>
+                </div>
                 <button onClick={handleNext} className="tw-btn">
                   {currentStep === tourSteps.length - 1 ? 'Finish' : 'Next'}
                 </button>

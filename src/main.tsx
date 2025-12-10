@@ -4,6 +4,7 @@ import App from './app.tsx'
 
 export type TourWidgetConfig = {
   tourId: string
+  showTourButton?: boolean
   add3d?: boolean
   backgroundColor?: string
   textColor?: string
