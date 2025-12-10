@@ -19,11 +19,12 @@ export default function App({ tourId, config }: Props) {
   const storageKey = `tour-widget-step-${tourId}`
   const finishedKey = `tour-widget-finished-${tourId}`
 
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
   const [tourSteps, setTourSteps] = useState<TourStep[]>([])
   const [currentStep, setCurrentStep] = useState(0)
   const [modalPosition, setModalPosition] = useState<ModalPosition | null>(null)
   const [isFinished, setIsFinished] = useState(localStorage.getItem(finishedKey) === 'true')
+  const [contentKey, setContentKey] = useState(0)
 
   useEffect(() => {
     async function getTour() {
@@ -106,12 +107,14 @@ export default function App({ tourId, config }: Props) {
       handleClose()
     } else {
       setCurrentStep(currentStep + 1)
+      setContentKey((key) => key + 1)
     }
   }
 
   function handlePrev() {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1)
+      setContentKey((key) => key + 1)
     }
   }
 
@@ -120,7 +123,12 @@ export default function App({ tourId, config }: Props) {
   }
 
   const modalStyle = modalPosition
-    ? { top: `${modalPosition.top}px`, left: `${modalPosition.left}px`, position: 'fixed' }
+    ? {
+        top: `${modalPosition.top}px`,
+        left: `${modalPosition.left}px`,
+        position: 'fixed',
+        transition: 'top 0.3s ease-in-out, left 0.3s ease-in-out',
+      }
     : {}
 
   const customStyles: Record<string, string> = {}
@@ -134,16 +142,16 @@ export default function App({ tourId, config }: Props) {
 
   return (
     <div className="tw-root" aria-hidden={!open}>
-      {!open && tourSteps.length > 0 && (
+      {!open && !isFinished && tourSteps.length > 0 && (
         <button className="tw-btn rounded-md" style={customStyles} onClick={() => setOpen(true)}>
-          {isFinished ? 'Show Tour' : 'Resume Tour'}
+          Resume Tour
         </button>
       )}
       {tourSteps.length > 0 && open && !isFinished && (
         <>
-          {!tourSteps[currentStep].target_selector && (
-            <div className="tw-modal-overlay" onClick={handleClose}></div>
-          )}
+          {!document.querySelector(
+            tourSteps[currentStep].target_selector || 'tour-widget-null-el',
+          ) && <div className="tw-modal-overlay" onClick={handleClose}></div>}
           <div
             style={{ ...modalStyle, ...customStyles }}
             className={modalClasses}
@@ -151,7 +159,10 @@ export default function App({ tourId, config }: Props) {
             aria-modal="true"
           >
             <div
-              className={`tw-modal-content ${config.add3d ? 'tw-modal-content-3d' : ''} text-black`}
+              key={contentKey}
+              className={`tw-modal-content ${
+                config.add3d ? 'tw-modal-content-3d' : ''
+              } text-black tw-animate__animated tw-animate__contentFade`}
             >
               <div className="flex items-center justify-between">
                 <h3 className="tw-modal-title"> {tourSteps[currentStep].title} </h3>
