@@ -2,9 +2,12 @@ import { useEffect, useState } from 'preact/hooks'
 import { supabase } from './supabase'
 import { clearHighlight, highlightElement } from './highlight'
 import { type TourWidgetConfig } from './main'
+import { emitEvent } from './analytics'
+import { getSessionId } from './session'
 
 type Props = { tourId: string; config: TourWidgetConfig }
 type TourStep = {
+  id: string
   title: string
   description: string
   target_selector?: string
@@ -25,6 +28,7 @@ export default function App({ tourId, config }: Props) {
   const [modalPosition, setModalPosition] = useState<ModalPosition | null>(null)
   const [isFinished, setIsFinished] = useState(localStorage.getItem(finishedKey) === 'true')
   const [contentKey, setContentKey] = useState(0)
+  const [sessionId] = useState(getSessionId())
 
   useEffect(() => {
     async function getTour() {
@@ -42,6 +46,7 @@ export default function App({ tourId, config }: Props) {
         const savedStep = parseInt(localStorage.getItem(storageKey) || '0', 10)
         setCurrentStep(savedStep)
         if (localStorage.getItem(finishedKey) !== 'true') {
+          if (savedStep === 0) emitEvent(tourId, data[0].id, 'tour_started', sessionId)
           setOpen(true)
         }
       }
@@ -51,6 +56,11 @@ export default function App({ tourId, config }: Props) {
     getTour()
   }, [tourId, storageKey, finishedKey])
 
+  useEffect(() => {
+    if (open && tourSteps.length > 0) {
+      emitEvent(tourId, tourSteps[currentStep].id, 'step_viewed', sessionId)
+    }
+  }, [currentStep, open, tourSteps, tourId, sessionId])
   useEffect(() => {
     if (open) {
       localStorage.setItem(storageKey, String(currentStep))
@@ -96,12 +106,14 @@ export default function App({ tourId, config }: Props) {
   }
 
   function handleSkip() {
+    emitEvent(tourId, tourSteps[currentStep].id, 'tour_skipped', sessionId)
     handleClose()
   }
 
   function handleNext() {
     if (currentStep === tourSteps.length - 1) {
       localStorage.removeItem(storageKey)
+      emitEvent(tourId, tourSteps[currentStep].id, 'tour_completed', sessionId)
       localStorage.setItem(finishedKey, 'true')
       setIsFinished(true)
       handleClose()
@@ -143,7 +155,13 @@ export default function App({ tourId, config }: Props) {
   return (
     <div className="tw-root" aria-hidden={!open}>
       {!open && !isFinished && tourSteps.length > 0 && (
-        <button className="tw-btn rounded-md" style={customStyles} onClick={() => setOpen(true)}>
+        <button
+          className="tw-btn rounded-md"
+          style={customStyles}
+          onClick={() => {
+            setOpen(true)
+          }}
+        >
           Resume Tour
         </button>
       )}
