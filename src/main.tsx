@@ -2,16 +2,24 @@ import { render } from 'preact'
 import styles from './index.css?inline'
 import App from './app.tsx'
 
-export async function initTourFromScript() {
+export type TourWidgetConfig = {
+  tourId: string
+  showTourButton?: boolean
+  add3d?: boolean
+  backgroundColor?: string
+  textColor?: string
+  primaryColor?: string
+}
+
+export async function init(config: TourWidgetConfig) {
   try {
-    const currentScript =
-      document.currentScript || Array.from(document.getElementsByTagName('script')).pop()
-    const tourId =
-      (currentScript && (currentScript as HTMLScriptElement).getAttribute('data-tour-id')) ||
-      'demo-tour-1'
+    if (!config.tourId) {
+      console.warn('[Embed Tour] `tourId` is required in the config.')
+      return
+    }
 
     const container = document.createElement('div')
-    container.id = `embed-tour-container-${tourId}`
+    container.id = `embed-tour-container-${config.tourId}`
     container.setAttribute('aria-hidden', 'false')
 
     container.style.position = 'fixed'
@@ -32,7 +40,7 @@ export async function initTourFromScript() {
     mountPoint.id = 'embed-tour-mount'
     shadow.appendChild(mountPoint)
 
-    render(<App tourId={tourId} />, mountPoint)
+    render(<App tourId={config.tourId} config={config} />, mountPoint)
   } catch (e) {
     console.warn('[embed-tour] init error', e)
   }

@@ -1,6 +1,5 @@
 @import 'tailwindcss';
 
-/* Scoping prefix tw- to avoid host collisions */
 .tw-root {
   font-family:
     ui-sans-serif,
@@ -30,13 +29,21 @@
   cursor: pointer;
   box-shadow: 0 6px 18px rgba(14, 165, 233, 0.25);
 }
+.tw-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5); /* This is the overlay for the modal itself */
+  z-index: 1000000;
+}
 .tw-modal {
   position: fixed;
+  z-index: 1000001;
+}
+.tw-modal-centered {
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000001;
 }
 .tw-modal-content {
   background: white;
@@ -51,7 +58,9 @@
 }
 .tw-modal-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
   gap: 8px;
   margin-top: 12px;
 }
@@ -62,4 +71,9 @@
   color: white;
   border: none;
   cursor: pointer;
+}
+.tw-btn-outline {
+  background: transparent;
+  color: #111827;
+  border: 1px solid #d1d5db;
 }
