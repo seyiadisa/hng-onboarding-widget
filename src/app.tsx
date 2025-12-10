@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'preact/hooks'
 import { supabase } from './supabase'
 import { clearHighlight, highlightElement } from './highlight'
+import { type TourWidgetConfig } from './main'
 
-type Props = { tourId: string }
+type Props = { tourId: string; config: TourWidgetConfig }
 type TourStep = {
   title: string
   description: string
@@ -14,7 +15,7 @@ type ModalPosition = {
   left: number
 }
 
-export default function App({ tourId }: Props) {
+export default function App({ tourId, config }: Props) {
   const [open, setOpen] = useState(true)
   const [tourSteps, setTourSteps] = useState<TourStep[]>([])
   const [currentStep, setCurrentStep] = useState(0)
@@ -69,7 +70,7 @@ export default function App({ tourId }: Props) {
       clearHighlight()
       setModalPosition(null)
     }
-    return () => clearHighlight()
+    return () => clearHighlight() // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep, tourSteps, open])
 
   function handleNext() {
@@ -88,6 +89,15 @@ export default function App({ tourId }: Props) {
     ? { top: `${modalPosition.top}px`, left: `${modalPosition.left}px`, position: 'fixed' }
     : {}
 
+  const customStyles: Record<string, string> = {}
+  if (config.backgroundColor) customStyles['--tour-bg-color'] = config.backgroundColor
+  if (config.textColor) customStyles['--tour-text-color'] = config.textColor
+  if (config.primaryColor) customStyles['--tour-primary-color'] = config.primaryColor
+
+  const modalClasses = `tw-modal ${!modalPosition ? 'tw-modal-centered' : ''} ${
+    config.add3d ? 'tw-modal-3d' : ''
+  } tw-animate__animated tw-animate__zoomIn`
+
   return (
     <div className="tw-root" aria-hidden={!open}>
       {tourSteps.length > 0 && open && (
@@ -96,14 +106,14 @@ export default function App({ tourId }: Props) {
             <div className="tw-modal-overlay" onClick={() => setOpen(false)}></div>
           )}
           <div
-            style={modalStyle}
-            className={`tw-modal ${
-              !modalPosition ? 'tw-modal-centered' : ''
-            } tw-animate__animated tw-animate__zoomIn`}
+            style={{ ...modalStyle, ...customStyles }}
+            className={modalClasses}
             role="dialog"
             aria-modal="true"
           >
-            <div className="tw-modal-content text-black">
+            <div
+              className={`tw-modal-content ${config.add3d ? 'tw-modal-content-3d' : ''} text-black`}
+            >
               <h3 className="tw-modal-title"> {tourSteps[currentStep].title} </h3>
               <div className="tw-modal-body">{tourSteps[currentStep].description}</div>
               <div className="tw-modal-actions">
