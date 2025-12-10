@@ -1,10 +1,34 @@
-import { useState } from 'preact/hooks'
+import { useEffect, useState } from 'preact/hooks'
+import { supabase } from './supabase'
 
 type Props = { tourId: string }
+type TourStep = {
+  title: string
+  description: string
+  target_selector?: string
+}
 
 export default function App({ tourId }: Props) {
   const [open, setOpen] = useState(false)
-  console.log(tourId)
+  const [tourSteps, setTourSteps] = useState<TourStep[]>([])
+
+  useEffect(() => {
+    async function getTour() {
+      const { data, error } = await supabase.from('steps').select().eq('tour_id', tourId)
+
+      if (error) {
+        if (error.code === '22P02') {
+          alert('You have entered an invalid tour ID')
+        }
+
+        return
+      }
+
+      setTourSteps(data)
+    }
+
+    getTour()
+  }, [])
 
   function closeModal() {
     setOpen(false)
