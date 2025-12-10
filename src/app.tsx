@@ -9,8 +9,8 @@ type TourStep = {
 }
 
 export default function App({ tourId }: Props) {
-  const [open, setOpen] = useState(false)
   const [tourSteps, setTourSteps] = useState<TourStep[]>([])
+  // const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
     async function getTour() {
@@ -23,20 +23,19 @@ export default function App({ tourId }: Props) {
 
         return
       }
-
       setTourSteps(data)
     }
 
     getTour()
   }, [])
 
-  function closeModal() {
-    setOpen(false)
-  }
+  function handleNext() {}
+
+  function handlePrev() {}
 
   return (
     <div className="tw-root" aria-hidden={false}>
-      <button
+      {/* <button
         aria-label="Open tour"
         className="tw-btn-launcher tw-animate__animated tw-animate__fadeIn"
         onClick={() => {
@@ -44,9 +43,9 @@ export default function App({ tourId }: Props) {
         }}
       >
         Tour
-      </button>
+      </button> */}
 
-      {open && (
+      {tourSteps && (
         <div
           className="tw-modal tw-animate__animated tw-animate__zoomIn"
           role="dialog"
@@ -58,7 +57,10 @@ export default function App({ tourId }: Props) {
               This is a tour modal — use the dashboard to configure full tours.
             </div>
             <div className="tw-modal-actions">
-              <button onClick={closeModal} className="tw-btn">
+              <button onClick={handleNext} className="tw-btn">
+                Close
+              </button>
+              <button onClick={handlePrev} className="tw-btn">
                 Close
               </button>
             </div>
